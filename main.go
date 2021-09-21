@@ -18,7 +18,7 @@ func main() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		fmt.Fprintln(os.Stderr, "a path to a directory or a file is required")
+		fmt.Fprintln(os.Stderr, "A path to a directory or a file is required!")
 		os.Exit(1)
 	}
 
@@ -59,8 +59,8 @@ func main() {
 	fmt.Printf("File server accept now connection on port %d\n", port)
 
 	select {
-	case <-srvErr:
-		fmt.Fprintln(os.Stderr, srvErr)
+	case err := <-srvErr:
+		fmt.Fprintln(os.Stderr, err)
 		break
 	case <-sig:
 		break
