@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -69,8 +68,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Println(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
+	fmt.Println("File server stopped")
 }
 
 func cacheControlMiddleware(next http.Handler) http.Handler {
