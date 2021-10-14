@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -27,11 +28,11 @@ func main() {
 	fi, err := os.Stat(path)
 	if err == nil {
 		if fi.IsDir() {
-			mux.Handle("/", http.StripPrefix("/", cacheControlMiddleware(http.FileServer(http.Dir(path)))))
+			mux.Handle("/", http.StripPrefix("/", loggingMiddleware(path, fi.IsDir(), cacheControlMiddleware(http.FileServer(http.Dir(path))))))
 		} else {
-			mux.HandleFunc(fmt.Sprintf("/%s", filepath.Base(path)), cacheControlMiddlewareFunc(func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/%s", filepath.Base(path)), loggingMiddlewareFunc(path, fi.IsDir(), cacheControlMiddlewareFunc(func(w http.ResponseWriter, r *http.Request) {
 				http.ServeFile(w, r, path)
-			}))
+			})))
 		}
 	} else {
 		fmt.Fprintln(os.Stderr, err)
@@ -72,6 +73,25 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("File server stopped")
+}
+
+func loggingMiddlewareFunc(root string, isDir bool, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		path := root
+		if isDir {
+			path = filepath.Clean(filepath.Join(root, r.URL.Path))
+		}
+		fi, err := os.Stat(path)
+		if err == nil && !fi.IsDir() {
+			log.Printf("[%s] served %s in %s", r.Method, r.URL.Path, time.Since(start))
+		}
+	}
+}
+
+func loggingMiddleware(root string, isDir bool, next http.Handler) http.Handler {
+	return loggingMiddlewareFunc(root, isDir, next.ServeHTTP)
 }
 
 func cacheControlMiddleware(next http.Handler) http.Handler {
