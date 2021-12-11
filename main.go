@@ -72,7 +72,7 @@ func main() {
 		srvErr <- srv.Serve(lis)
 	}()
 
-	fmt.Printf("File server accept now connection on %s %s\n", tcpAddr.String(), unquoteCodePoint("\\U0001f680"))
+	fmt.Printf("File server accept now connection on %s %s\n\n", tcpAddr.String(), unquoteCodePoint("\\U0001f680"))
 
 	select {
 	case err := <-srvErr:
