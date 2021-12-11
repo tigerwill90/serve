@@ -97,7 +97,7 @@ func loggingMiddlewareFunc(root string, isDir bool, next http.HandlerFunc) http.
 		next.ServeHTTP(w, r)
 		path := root
 		if isDir {
-			path = filepath.Clean(filepath.Join(root, r.URL.Path))
+			path = filepath.Join(root, r.URL.Path)
 		}
 		fi, err := os.Stat(path)
 		if err == nil && !fi.IsDir() {
