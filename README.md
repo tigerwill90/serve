@@ -2,8 +2,8 @@
 
 Serve your files over http in one command line.
 
-````
-serve foo
+````bash
+serve .
 ````
 
 ### Install

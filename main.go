@@ -5,16 +5,21 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 )
 
 func main() {
-	var port uint
-	flag.UintVar(&port, "port", 80, "port to serve content")
+	var port string
+	flag.StringVar(&port, "port", "80", "port to serve content")
+	var host string
+	flag.StringVar(&host, "host", "0.0.0.0", "host to serve content")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
@@ -22,29 +27,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	tcpAddr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(host, port))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Cannot resolve tcp address: %s\n", err)
+		os.Exit(1)
+	}
+
 	mux := http.NewServeMux()
 
 	path := filepath.Clean(flag.Args()[0])
 	fi, err := os.Stat(path)
-	if err == nil {
-		if fi.IsDir() {
-			mux.Handle("/", http.StripPrefix("/", loggingMiddleware(path, fi.IsDir(), cacheControlMiddleware(http.FileServer(http.Dir(path))))))
-		} else {
-			mux.HandleFunc(fmt.Sprintf("/%s", filepath.Base(path)), loggingMiddlewareFunc(path, fi.IsDir(), cacheControlMiddlewareFunc(func(w http.ResponseWriter, r *http.Request) {
-				http.ServeFile(w, r, path)
-			})))
-		}
-	} else {
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
+	if fi.IsDir() {
+		mux.Handle("/", http.StripPrefix("/", loggingMiddleware(path, fi.IsDir(), cacheControlMiddleware(http.FileServer(http.Dir(path))))))
+	} else {
+		mux.HandleFunc(fmt.Sprintf("/%s", filepath.Base(path)), loggingMiddlewareFunc(path, fi.IsDir(), cacheControlMiddlewareFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, path)
+		})))
+	}
+
 	srv := http.Server{
-		Addr:         fmt.Sprintf(":%d", port),
 		Handler:      mux,
 		ReadTimeout:  0,
 		WriteTimeout: 5 * time.Second,
 		IdleTimeout:  5 * time.Second,
+	}
+
+	lis, err := net.ListenTCP("tcp", tcpAddr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Cannot listen on %s: %s\n", tcpAddr.String(), err)
+		os.Exit(1)
 	}
 
 	sig := make(chan os.Signal, 2)
@@ -53,10 +69,10 @@ func main() {
 	srvErr := make(chan error)
 
 	go func() {
-		srvErr <- srv.ListenAndServe()
+		srvErr <- srv.Serve(lis)
 	}()
 
-	fmt.Printf("File server accept now connection on port %d\n", port)
+	fmt.Printf("File server accept now connection on %s %s\n", tcpAddr.String(), unquoteCodePoint("\\U0001f680"))
 
 	select {
 	case err := <-srvErr:
@@ -103,4 +119,12 @@ func cacheControlMiddlewareFunc(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
 		next.ServeHTTP(w, r)
 	}
+}
+
+func unquoteCodePoint(s string) string {
+	r, err := strconv.ParseInt(strings.TrimPrefix(s, "\\U"), 16, 32)
+	if err != nil {
+		panic(err)
+	}
+	return string(r)
 }
