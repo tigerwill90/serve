@@ -17,7 +17,7 @@ import (
 
 func main() {
 	var port string
-	flag.StringVar(&port, "port", "80", "port to serve content")
+	flag.StringVar(&port, "port", "8080", "port to serve content")
 	var host string
 	flag.StringVar(&host, "host", "0.0.0.0", "host to serve content")
 	flag.Parse()
@@ -53,8 +53,8 @@ func main() {
 	srv := http.Server{
 		Handler:      mux,
 		ReadTimeout:  0,
-		WriteTimeout: 5 * time.Second,
-		IdleTimeout:  5 * time.Second,
+		WriteTimeout: 3 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	lis, err := net.ListenTCP("tcp", tcpAddr)
