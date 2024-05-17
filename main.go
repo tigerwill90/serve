@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -64,7 +65,7 @@ func main() {
 	}
 
 	sig := make(chan os.Signal, 2)
-	signal.Notify(sig, os.Interrupt, os.Kill)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
 	srvErr := make(chan error)
 
