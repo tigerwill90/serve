@@ -52,10 +52,11 @@ func main() {
 	}
 
 	srv := http.Server{
-		Handler:      mux,
-		ReadTimeout:  0,
-		WriteTimeout: 3 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Handler:        mux,
+		ReadTimeout:    3 * time.Second,
+		WriteTimeout:   0,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	lis, err := net.ListenTCP("tcp", tcpAddr)
