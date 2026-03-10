@@ -51,14 +51,11 @@ func main() {
 	)
 
 	if fi.IsDir() {
-		fileServer := http.FileServer(http.Dir(path))
-		f.MustAdd([]string{http.MethodGet, http.MethodHead}, "/*{filepath}", func(c *fox.Context) {
-			http.StripPrefix("/", fileServer).ServeHTTP(c.Writer(), c.Request())
-		})
+		f.MustAdd([]string{http.MethodGet, http.MethodHead}, "/*{filepath}", fox.WrapH(http.StripPrefix("/", http.FileServer(http.Dir(path)))))
 	} else {
-		f.MustAdd([]string{http.MethodGet, http.MethodHead}, fmt.Sprintf("/%s", filepath.Base(path)), func(c *fox.Context) {
-			http.ServeFile(c.Writer(), c.Request(), path)
-		})
+		f.MustAdd([]string{http.MethodGet, http.MethodHead}, fmt.Sprintf("/%s", filepath.Base(path)), fox.WrapF(func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, path)
+		}))
 	}
 
 	srv := http.Server{
