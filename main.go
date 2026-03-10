@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -14,6 +14,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/fox-toolkit/fox"
 )
 
 func main() {
@@ -34,8 +36,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	mux := http.NewServeMux()
-
 	path := filepath.Clean(flag.Args()[0])
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -43,16 +43,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	f := fox.MustRouter(
+		fox.WithMiddleware(
+			fox.Logger(slog.NewTextHandler(os.Stdout, nil)),
+			cacheControlMiddleware(),
+		),
+	)
+
 	if fi.IsDir() {
-		mux.Handle("/", http.StripPrefix("/", loggingMiddleware(path, fi.IsDir(), cacheControlMiddleware(http.FileServer(http.Dir(path))))))
+		f.MustAdd([]string{http.MethodGet, http.MethodHead}, "/*{filepath}", fox.WrapH(http.StripPrefix("/", http.FileServer(http.Dir(path)))))
 	} else {
-		mux.HandleFunc(fmt.Sprintf("/%s", filepath.Base(path)), loggingMiddlewareFunc(path, fi.IsDir(), cacheControlMiddlewareFunc(func(w http.ResponseWriter, r *http.Request) {
+		f.MustAdd([]string{http.MethodGet, http.MethodHead}, fmt.Sprintf("/%s", filepath.Base(path)), fox.WrapF(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, path)
-		})))
+		}))
 	}
 
 	srv := http.Server{
-		Handler:        mux,
+		Handler:        f,
 		ReadTimeout:    3 * time.Second,
 		WriteTimeout:   0,
 		IdleTimeout:    60 * time.Second,
@@ -93,33 +100,12 @@ func main() {
 	fmt.Println("File server stopped")
 }
 
-func loggingMiddlewareFunc(root string, isDir bool, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		path := root
-		if isDir {
-			path = filepath.Join(root, r.URL.Path)
+func cacheControlMiddleware() fox.MiddlewareFunc {
+	return func(next fox.HandlerFunc) fox.HandlerFunc {
+		return func(c *fox.Context) {
+			c.SetHeader("Cache-Control", "no-store, max-age=0")
+			next(c)
 		}
-		fi, err := os.Stat(path)
-		if err == nil && !fi.IsDir() {
-			log.Printf("[%s] served %s in %s", r.Method, r.URL.Path, time.Since(start))
-		}
-	}
-}
-
-func loggingMiddleware(root string, isDir bool, next http.Handler) http.Handler {
-	return loggingMiddlewareFunc(root, isDir, next.ServeHTTP)
-}
-
-func cacheControlMiddleware(next http.Handler) http.Handler {
-	return cacheControlMiddlewareFunc(next.ServeHTTP)
-}
-
-func cacheControlMiddlewareFunc(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-store, max-age=0")
-		next.ServeHTTP(w, r)
 	}
 }
 
@@ -128,5 +114,5 @@ func unquoteCodePoint(s string) string {
 	if err != nil {
 		panic(err)
 	}
-	return string(r)
+	return string(rune(r))
 }
