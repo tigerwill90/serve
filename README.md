@@ -1,7 +1,7 @@
 # Serve
 
 > [!WARNING]
-> This is a toy project. It was built entirely from a smartphone using Claude Code as an experiment in AI-assisted development. Do not run it outside of a sandboxed environment.
+> This is a toy project being built entirely from a smartphone using Claude Code, as an experiment to see how far AI-assisted development can go. Do not run it outside of a sandboxed environment.
 
 ## What is it
 
