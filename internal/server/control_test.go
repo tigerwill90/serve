@@ -8,45 +8,43 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/fox-toolkit/fox"
 )
 
-func setupControl(t *testing.T) (*control, *http.ServeMux) {
+func setupControl(t *testing.T) (*control, *fox.Router) {
 	t.Helper()
 
 	router := newTestRouter()
 	ctrl := newControl(router)
+	controlRouter := newControlRouter(ctrl)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /v1/mounts", ctrl.handleMount)
-	mux.HandleFunc("DELETE /v1/mounts", ctrl.handleUnmount)
-	mux.HandleFunc("GET /v1/mounts", ctrl.handleList)
-
-	return ctrl, mux
+	return ctrl, controlRouter
 }
 
-func postMount(t *testing.T, mux *http.ServeMux, path, route string) *httptest.ResponseRecorder {
+func postMount(t *testing.T, controlRouter *fox.Router, path, route string) *httptest.ResponseRecorder {
 	t.Helper()
 	body, _ := json.Marshal(mountRequest{Path: path, Route: route})
 	req := httptest.NewRequest(http.MethodPost, "/v1/mounts", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, req)
+	controlRouter.ServeHTTP(w, req)
 	return w
 }
 
-func deleteMount(t *testing.T, mux *http.ServeMux, route string) *httptest.ResponseRecorder {
+func deleteMount(t *testing.T, controlRouter *fox.Router, route string) *httptest.ResponseRecorder {
 	t.Helper()
 	body, _ := json.Marshal(unmountRequest{Route: route})
 	req := httptest.NewRequest(http.MethodDelete, "/v1/mounts", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, req)
+	controlRouter.ServeHTTP(w, req)
 	return w
 }
 
-func getList(t *testing.T, mux *http.ServeMux) *httptest.ResponseRecorder {
+func getList(t *testing.T, controlRouter *fox.Router) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/v1/mounts", nil)
 	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, req)
+	controlRouter.ServeHTTP(w, req)
 	return w
 }
 
@@ -66,14 +64,14 @@ func decodeResponse(t *testing.T, w *httptest.ResponseRecorder) testResponse {
 }
 
 func TestMountDirectory(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<h1>hello</h1>"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	w := postMount(t, mux, dir, "/static")
+	w := postMount(t, controlRouter, dir, "/static")
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
 	}
@@ -96,7 +94,7 @@ func TestMountDirectory(t *testing.T) {
 }
 
 func TestMountFile(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "config.json")
@@ -104,7 +102,7 @@ func TestMountFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	w := postMount(t, mux, filePath, "/config")
+	w := postMount(t, controlRouter, filePath, "/config")
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
 	}
@@ -127,11 +125,11 @@ func TestMountFile(t *testing.T) {
 }
 
 func TestMountWithHostname(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	dir := t.TempDir()
 
-	w := postMount(t, mux, dir, "example.com/assets")
+	w := postMount(t, controlRouter, dir, "example.com/assets")
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
 	}
@@ -147,15 +145,15 @@ func TestMountWithHostname(t *testing.T) {
 }
 
 func TestUnmount(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	dir := t.TempDir()
-	w := postMount(t, mux, dir, "/files")
+	w := postMount(t, controlRouter, dir, "/files")
 	if w.Code != http.StatusCreated {
 		t.Fatalf("mount failed: %d %s", w.Code, w.Body.String())
 	}
 
-	w = deleteMount(t, mux, "/files")
+	w = deleteMount(t, controlRouter, "/files")
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
@@ -167,19 +165,19 @@ func TestUnmount(t *testing.T) {
 }
 
 func TestUnmountNotFound(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
-	w := deleteMount(t, mux, "/nonexistent")
+	w := deleteMount(t, controlRouter, "/nonexistent")
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d: %s", w.Code, w.Body.String())
 	}
 }
 
 func TestListMounts(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	// Empty list initially
-	w := getList(t, mux)
+	w := getList(t, controlRouter)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
@@ -196,10 +194,10 @@ func TestListMounts(t *testing.T) {
 	// Add two mounts
 	dir1 := t.TempDir()
 	dir2 := t.TempDir()
-	postMount(t, mux, dir1, "/alpha")
-	postMount(t, mux, dir2, "/beta")
+	postMount(t, controlRouter, dir1, "/alpha")
+	postMount(t, controlRouter, dir2, "/beta")
 
-	w = getList(t, mux)
+	w = getList(t, controlRouter)
 	resp = decodeResponse(t, w)
 	if err := json.Unmarshal(resp.Data, &mounts); err != nil {
 		t.Fatal(err)
@@ -210,37 +208,37 @@ func TestListMounts(t *testing.T) {
 }
 
 func TestMountConflict(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	dir := t.TempDir()
-	w := postMount(t, mux, dir, "/dup")
+	w := postMount(t, controlRouter, dir, "/dup")
 	if w.Code != http.StatusCreated {
 		t.Fatalf("first mount failed: %d", w.Code)
 	}
 
-	w = postMount(t, mux, dir, "/dup")
+	w = postMount(t, controlRouter, dir, "/dup")
 	if w.Code != http.StatusConflict {
 		t.Fatalf("expected 409 on duplicate mount, got %d: %s", w.Code, w.Body.String())
 	}
 }
 
 func TestMountInvalidPath(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
-	w := postMount(t, mux, "/nonexistent/path/xyz", "/test")
+	w := postMount(t, controlRouter, "/nonexistent/path/xyz", "/test")
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
 	}
 }
 
 func TestMountMissingFields(t *testing.T) {
-	_, mux := setupControl(t)
+	_, controlRouter := setupControl(t)
 
 	// Missing path
 	body, _ := json.Marshal(mountRequest{Route: "/test"})
 	req := httptest.NewRequest(http.MethodPost, "/v1/mounts", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, req)
+	controlRouter.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", w.Code)
 	}
@@ -249,7 +247,7 @@ func TestMountMissingFields(t *testing.T) {
 	body, _ = json.Marshal(mountRequest{Path: "/tmp"})
 	req = httptest.NewRequest(http.MethodPost, "/v1/mounts", bytes.NewReader(body))
 	w = httptest.NewRecorder()
-	mux.ServeHTTP(w, req)
+	controlRouter.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", w.Code)
 	}

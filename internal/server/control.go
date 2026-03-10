@@ -27,6 +27,14 @@ func newControl(router *fox.Router) *control {
 	return &control{router: router}
 }
 
+func newControlRouter(ctrl *control) *fox.Router {
+	controlRouter := fox.MustRouter()
+	controlRouter.MustAdd([]string{http.MethodPost}, "/v1/mounts", ctrl.handleMount)
+	controlRouter.MustAdd([]string{http.MethodDelete}, "/v1/mounts", ctrl.handleUnmount)
+	controlRouter.MustAdd([]string{http.MethodGet}, "/v1/mounts", ctrl.handleList)
+	return controlRouter
+}
+
 type mountRequest struct {
 	Path  string `json:"path"`
 	Route string `json:"route"`
@@ -49,33 +57,33 @@ type apiResponse struct {
 	Error string `json:"error,omitempty"`
 }
 
-func (ctrl *control) handleMount(w http.ResponseWriter, r *http.Request) {
+func (ctrl *control) handleMount(c *fox.Context) {
 	var req mountRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: "invalid request body"})
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: "invalid request body"})
 		return
 	}
 
 	if req.Path == "" || req.Route == "" {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: "path and route are required"})
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: "path and route are required"})
 		return
 	}
 
 	absPath, err := filepath.Abs(req.Path)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: fmt.Sprintf("invalid path: %s", err)})
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: fmt.Sprintf("invalid path: %s", err)})
 		return
 	}
 
 	fi, err := os.Stat(absPath)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: fmt.Sprintf("path not found: %s", err)})
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: fmt.Sprintf("path not found: %s", err)})
 		return
 	}
 
 	pattern, handler, mountType, err := buildRoute(absPath, req.Route, fi.IsDir())
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: err.Error()})
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: err.Error()})
 		return
 	}
 
@@ -89,11 +97,11 @@ func (ctrl *control) handleMount(w http.ResponseWriter, r *http.Request) {
 		fox.WithAnnotation(routeKey, req.Route),
 	)
 	if err != nil {
-		writeJSON(w, http.StatusConflict, apiResponse{Error: fmt.Sprintf("failed to add route: %s", err)})
+		writeJSON(c.Writer(), http.StatusConflict, apiResponse{Error: fmt.Sprintf("failed to add route: %s", err)})
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, apiResponse{
+	writeJSON(c.Writer(), http.StatusCreated, apiResponse{
 		OK: true,
 		Data: mountInfo{
 			Route:     req.Route,
@@ -104,15 +112,15 @@ func (ctrl *control) handleMount(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (ctrl *control) handleUnmount(w http.ResponseWriter, r *http.Request) {
+func (ctrl *control) handleUnmount(c *fox.Context) {
 	var req unmountRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: "invalid request body"})
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: "invalid request body"})
 		return
 	}
 
 	if req.Route == "" {
-		writeJSON(w, http.StatusBadRequest, apiResponse{Error: "route is required"})
+		writeJSON(c.Writer(), http.StatusBadRequest, apiResponse{Error: "route is required"})
 		return
 	}
 
@@ -128,19 +136,19 @@ func (ctrl *control) handleUnmount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pattern == "" {
-		writeJSON(w, http.StatusNotFound, apiResponse{Error: fmt.Sprintf("route %q not found", req.Route)})
+		writeJSON(c.Writer(), http.StatusNotFound, apiResponse{Error: fmt.Sprintf("route %q not found", req.Route)})
 		return
 	}
 
 	if _, err := ctrl.router.Delete(methods, pattern); err != nil {
-		writeJSON(w, http.StatusInternalServerError, apiResponse{Error: fmt.Sprintf("failed to delete route: %s", err)})
+		writeJSON(c.Writer(), http.StatusInternalServerError, apiResponse{Error: fmt.Sprintf("failed to delete route: %s", err)})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, apiResponse{OK: true})
+	writeJSON(c.Writer(), http.StatusOK, apiResponse{OK: true})
 }
 
-func (ctrl *control) handleList(w http.ResponseWriter, _ *http.Request) {
+func (ctrl *control) handleList(c *fox.Context) {
 	var mounts []mountInfo
 	seen := make(map[string]bool)
 
@@ -169,7 +177,7 @@ func (ctrl *control) handleList(w http.ResponseWriter, _ *http.Request) {
 		mounts = []mountInfo{}
 	}
 
-	writeJSON(w, http.StatusOK, apiResponse{OK: true, Data: mounts})
+	writeJSON(c.Writer(), http.StatusOK, apiResponse{OK: true, Data: mounts})
 }
 
 func buildRoute(absPath, route string, isDir bool) (pattern string, handler fox.HandlerFunc, mountType string, err error) {

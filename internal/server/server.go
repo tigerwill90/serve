@@ -45,11 +45,8 @@ func New(cfg Config) (*Server, error) {
 		),
 	)
 
-	controlMux := http.NewServeMux()
 	ctrl := newControl(router)
-	controlMux.HandleFunc("POST /v1/mounts", ctrl.handleMount)
-	controlMux.HandleFunc("DELETE /v1/mounts", ctrl.handleUnmount)
-	controlMux.HandleFunc("GET /v1/mounts", ctrl.handleList)
+	controlRouter := newControlRouter(ctrl)
 
 	s := &Server{
 		router: router,
@@ -63,7 +60,7 @@ func New(cfg Config) (*Server, error) {
 		},
 		controlSrv: &http.Server{
 			Addr:         controlAddr.String(),
-			Handler:      controlMux,
+			Handler:      controlRouter,
 			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 5 * time.Second,
 			IdleTimeout:  60 * time.Second,

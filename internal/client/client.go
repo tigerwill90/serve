@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"time"
 )
 
 type Client struct {
@@ -15,8 +17,16 @@ type Client struct {
 
 func New(controlPort string) *Client {
 	return &Client{
-		baseURL:    fmt.Sprintf("http://127.0.0.1:%s", controlPort),
-		httpClient: &http.Client{},
+		baseURL: fmt.Sprintf("http://127.0.0.1:%s", controlPort),
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: &http.Transport{
+				DialContext:         (&net.Dialer{Timeout: 3 * time.Second}).DialContext,
+				TLSHandshakeTimeout: 3 * time.Second,
+				ResponseHeaderTimeout: 5 * time.Second,
+				IdleConnTimeout:       30 * time.Second,
+			},
+		},
 	}
 }
 
