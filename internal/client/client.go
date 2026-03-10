@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -41,7 +42,7 @@ type MountInfo struct {
 
 type APIResponse struct {
 	Error string          `json:"error,omitempty"`
-	Data  json.RawMessage `json:"data,omitempty"`
+	Data  json.RawMessage `json:"data,omitzero"`
 	OK    bool            `json:"ok"`
 }
 
@@ -63,7 +64,7 @@ func (c *Client) Mount(path, route string) (*MountInfo, error) {
 	}
 
 	if !apiResp.OK {
-		return nil, fmt.Errorf("%s", apiResp.Error)
+		return nil, errors.New(apiResp.Error)
 	}
 
 	var info MountInfo
@@ -92,7 +93,7 @@ func (c *Client) Unmount(route string) error {
 	}
 
 	if !apiResp.OK {
-		return fmt.Errorf("%s", apiResp.Error)
+		return errors.New(apiResp.Error)
 	}
 
 	return nil
@@ -111,7 +112,7 @@ func (c *Client) List() ([]MountInfo, error) {
 	}
 
 	if !apiResp.OK {
-		return nil, fmt.Errorf("%s", apiResp.Error)
+		return nil, errors.New(apiResp.Error)
 	}
 
 	var mounts []MountInfo
