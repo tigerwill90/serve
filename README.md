@@ -1,6 +1,7 @@
 # Serve
 
-**Warning: This is a toy project.** The entire codebase was written using Claude Code on a smartphone, without ever opening a code editor. It exists as an experiment to see how far you can push AI-assisted development from a phone. The code has not been manually reviewed or audited. Do not trust it, do not run it outside of a sandboxed environment, and definitely do not run it on your personal or work machine.
+> [!WARNING]
+> This is a toy project. It was built entirely from a smartphone using Claude Code as an experiment in AI-assisted development. Do not run it outside of a sandboxed environment.
 
 ## What is it
 
