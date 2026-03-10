@@ -1,5 +1,7 @@
 # Serve
 
+[![CI](https://github.com/tigerwill90/serve/actions/workflows/ci.yml/badge.svg)](https://github.com/tigerwill90/serve/actions/workflows/ci.yml)
+
 > [!WARNING]
 > This is a toy project being built entirely from a smartphone using Claude Code, as an experiment to see how far AI-assisted development can go. Do not run it outside of a sandboxed environment.
 

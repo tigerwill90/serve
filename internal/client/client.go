@@ -10,8 +10,8 @@ import (
 )
 
 type Client struct {
-	baseURL    string
 	httpClient *http.Client
+	baseURL    string
 }
 
 func New(controlPort string) *Client {
@@ -40,9 +40,9 @@ type MountInfo struct {
 }
 
 type APIResponse struct {
-	OK    bool            `json:"ok"`
-	Data  json.RawMessage `json:"data,omitempty"`
 	Error string          `json:"error,omitempty"`
+	Data  json.RawMessage `json:"data,omitempty"`
+	OK    bool            `json:"ok"`
 }
 
 func (c *Client) Mount(path, route string) (*MountInfo, error) {
