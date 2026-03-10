@@ -29,9 +29,9 @@ func newControl(router *fox.Router) *control {
 
 func newControlRouter(ctrl *control) *fox.Router {
 	controlRouter := fox.MustRouter()
-	controlRouter.MustAdd([]string{http.MethodPost}, "/v1/mounts", ctrl.handleMount)
-	controlRouter.MustAdd([]string{http.MethodDelete}, "/v1/mounts", ctrl.handleUnmount)
-	controlRouter.MustAdd([]string{http.MethodGet}, "/v1/mounts", ctrl.handleList)
+	controlRouter.MustAdd(fox.MethodPost, "/v1/mounts", ctrl.handleMount)
+	controlRouter.MustAdd(fox.MethodDelete, "/v1/mounts", ctrl.handleUnmount)
+	controlRouter.MustAdd(fox.MethodGet, "/v1/mounts", ctrl.handleList)
 	return controlRouter
 }
 
