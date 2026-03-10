@@ -8,6 +8,18 @@
 - **Go version**: 1.24.0 (toolchain 1.24.7)
 - **License**: MIT
 
+Serve is a production-grade system. Code must be safety-first: assert preconditions and postconditions,
+bound all resource allocation, handle all error paths explicitly, and never trust input. Performance matters, but correctness comes first.
+
+We have a zero technical debt policy. If you touch code and notice something that could be better, whether in performance, architecture,
+readability, safety, or error handling, fix it now. Deferring improvements almost always means they never happen. This applies to new features,
+refactors, bug fixes, and code review feedback equally. The only acceptable reason to defer an improvement is if it requires a scope that would
+block the current change from shipping safely.
+
+## Writing Style
+
+When writing prose (PR descriptions, README sections, comments), avoid AI-typical formatting: no em dashes (—), no excessive bullet points, no superlatives. Write in a natural, concise, honest tone. Never fabricate performance claims or technical justifications.
+
 ## Architecture
 
 The project follows a clean separation between CLI, server, and client layers:
