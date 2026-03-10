@@ -5,7 +5,7 @@
 **Serve** is a lightweight HTTP file server CLI tool written in Go. It allows users to serve files over HTTP and dynamically mount/unmount directories and files at runtime without restarting the server.
 
 - **Module**: `github.com/tigerwill90/serve`
-- **Go version**: 1.24.0 (toolchain 1.24.7)
+- **Go version**: 1.26.0
 - **License**: MIT
 
 Serve is a production-grade system. Code must be safety-first: assert preconditions and postconditions,
@@ -108,7 +108,7 @@ golangci-lint run --fix
 GitHub Actions runs on pull requests to master/main. Two jobs:
 
 1. **Lint**: golangci-lint v2.11 with the config in `.golangci.yml`
-2. **Test**: `go test -race -count=1 ./...` across Go 1.24, 1.25, and stable
+2. **Test**: `go test -race -count=1 ./...` across Go 1.26 and stable
 
 ### Linter Configuration
 
