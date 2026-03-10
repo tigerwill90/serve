@@ -50,7 +50,7 @@ func getList(t *testing.T, controlRouter *fox.Router) *httptest.ResponseRecorder
 
 type testResponse struct {
 	OK    bool            `json:"ok"`
-	Data  json.RawMessage `json:"data,omitempty"`
+	Data  json.RawMessage `json:"data,omitzero"`
 	Error string          `json:"error,omitempty"`
 }
 
