@@ -98,6 +98,9 @@ go vet ./...
 
 # Lint (requires golangci-lint v2)
 golangci-lint run
+
+# Lint and auto-fix (useful for struct field alignment and formatting)
+golangci-lint run --fix
 ```
 
 ## CI
