@@ -29,8 +29,8 @@ func newMountCommand() *cli.Command {
 				return fmt.Errorf("invalid path: %w", err)
 			}
 
-			if _, err := os.Stat(absPath); err != nil {
-				return fmt.Errorf("path not found: %w", err)
+			if _, statErr := os.Stat(absPath); statErr != nil {
+				return fmt.Errorf("path not found: %w", statErr)
 			}
 
 			controlPort := cmd.Root().String("control-port")
