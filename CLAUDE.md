@@ -45,19 +45,47 @@ internal/
 
 ### Two-Server Design
 
-- **Public server** (default port 8080): Serves files and directory listings
-- **Control server** (default port 8081): JSON API for managing mounts at runtime
+The public server (default 127.0.0.1:8080) serves files and directory listings. The control server (default 127.0.0.1:8081) exposes a JSON API for managing mounts at runtime. Both servers start together and shut down gracefully on SIGINT/SIGTERM with a 5-second timeout.
+
+### Control API
+
+All endpoints live under `/v1/mounts` and return JSON with the `apiResponse` envelope:
+
+```json
+{"ok": true, "data": ..., "error": ""}
+```
+
+| Method | Endpoint | Purpose | Success Status |
+|--------|----------|---------|----------------|
+| POST | `/v1/mounts` | Mount a directory or file | 201 Created |
+| DELETE | `/v1/mounts` | Unmount a route | 200 OK |
+| GET | `/v1/mounts` | List active mounts | 200 OK |
+
+POST and DELETE accept JSON bodies. POST expects `{"path": "...", "route": "..."}`. DELETE expects `{"route": "..."}`. Error responses use 400 (bad input), 404 (not found), 409 (conflict), or 500 (internal).
+
+### Route Pattern Rules
+
+Directories mount with a wildcard suffix for subpath matching: route `/static` becomes pattern `/static/*{filepath}`. Files mount as exact patterns without wildcards. Hostname-scoped routes (e.g. `example.com/assets`) are supported.
+
+### Middleware
+
+The public server applies two middleware layers via the Fox router: `fox.Logger()` for structured request logging and a custom `cacheControlMiddleware()` that sets `Cache-Control: no-store, max-age=0` on every response.
 
 ### Key Dependencies
 
-- `github.com/fox-toolkit/fox` - HTTP router with annotation support (used to track mount metadata)
-- `github.com/urfave/cli/v3` - CLI framework
+- `github.com/fox-toolkit/fox` v0.27.1 - HTTP router with annotation support (used to store mount metadata on routes)
+- `github.com/urfave/cli/v3` v3.7.0 - CLI framework
+
+Fox annotations attach `mountInfo` metadata (route, local path, type, pattern) directly to routes, which the list endpoint reads back when enumerating mounts.
 
 ## Common Commands
 
 ```bash
 # Run all tests
 go test ./...
+
+# Run tests with race detector (matches CI)
+go test -race -count=1 ./...
 
 # Build the binary
 go build -o serve .
@@ -67,7 +95,21 @@ go fmt ./...
 
 # Vet code
 go vet ./...
+
+# Lint (requires golangci-lint v2)
+golangci-lint run
 ```
+
+## CI
+
+GitHub Actions runs on pull requests to master/main. Two jobs:
+
+1. **Lint**: golangci-lint v2.11 with the config in `.golangci.yml`
+2. **Test**: `go test -race -count=1 ./...` across Go 1.24, 1.25, and stable
+
+### Linter Configuration
+
+Defined in `.golangci.yml` (golangci-lint v2 format). Enabled linters: errcheck, gosec, govet (all checks), ineffassign, staticcheck, unused. Formatter: gofmt. Linter rules are relaxed for test files.
 
 ## Testing
 
@@ -75,6 +117,8 @@ go vet ./...
 - Test files are co-located with source files (`*_test.go`)
 - Shared test helpers live in `internal/server/helpers_test.go`
 - All tests are fast and self-contained (no external dependencies)
+- Tests use `t.TempDir()` for filesystem isolation and `t.Helper()` on helper functions
+- Client tests spin up mock HTTP servers with httptest to validate request/response handling
 
 ## Code Conventions
 
@@ -84,4 +128,5 @@ go vet ./...
 - **HTTP status codes**: Use appropriate codes (201 Created, 400 Bad Request, 404 Not Found, 409 Conflict)
 - **Naming**: Standard Go conventions (CamelCase exports, camelCase unexported)
 - **Package visibility**: Implementation details go in `internal/`; CLI commands in `cmd/`
-- **No linter config**: Code should pass `go fmt` and `go vet`
+- **Resource cleanup**: Always defer `Body.Close()` after HTTP calls; use deferred cleanup for listeners and servers
+- **Server timeouts**: Public server uses 3s read / unlimited write / 60s idle. Control server uses 5s read / 5s write / 60s idle.
