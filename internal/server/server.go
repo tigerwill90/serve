@@ -58,14 +58,15 @@ func New(cfg Config) (*Server, error) {
 			ReadTimeout:    3 * time.Second,
 			WriteTimeout:   0,
 			IdleTimeout:    60 * time.Second,
-			MaxHeaderBytes: 1 << 20,
+			MaxHeaderBytes: 8192,
 		},
 		controlSrv: &http.Server{
-			Addr:         controlAddr.String(),
-			Handler:      controlRouter,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			IdleTimeout:  60 * time.Second,
+			Addr:           controlAddr.String(),
+			Handler:        controlRouter,
+			ReadTimeout:    5 * time.Second,
+			WriteTimeout:   5 * time.Second,
+			IdleTimeout:    60 * time.Second,
+			MaxHeaderBytes: 8192,
 		},
 	}
 
