@@ -12,6 +12,11 @@ func Execute(ctx context.Context, args []string) error {
 		Usage: "Dynamic file server with runtime mount support",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
+				Name:  "control-host",
+				Usage: "Host for the control API",
+				Value: "127.0.0.1",
+			},
+			&cli.StringFlag{
 				Name:  "control-port",
 				Usage: "Port for the control API",
 				Value: "8081",

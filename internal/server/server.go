@@ -18,6 +18,7 @@ import (
 type Config struct {
 	Host        string
 	Port        string
+	ControlHost string
 	ControlPort string
 }
 
@@ -33,7 +34,7 @@ func New(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("cannot resolve public address: %w", err)
 	}
 
-	controlAddr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(cfg.Host, cfg.ControlPort))
+	controlAddr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(cfg.ControlHost, cfg.ControlPort))
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve control address: %w", err)
 	}

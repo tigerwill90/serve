@@ -26,6 +26,11 @@ func newStartCommand() *cli.Command {
 				Value:   "8080",
 			},
 			&cli.StringFlag{
+				Name:  "control-host",
+				Usage: "Host to bind the control API to",
+				Value: "127.0.0.1",
+			},
+			&cli.StringFlag{
 				Name:  "control-port",
 				Usage: "Port for the control API",
 				Value: "8081",
@@ -35,6 +40,7 @@ func newStartCommand() *cli.Command {
 			srv, err := server.New(server.Config{
 				Host:        cmd.String("host"),
 				Port:        cmd.String("port"),
+				ControlHost: cmd.String("control-host"),
 				ControlPort: cmd.String("control-port"),
 			})
 			if err != nil {

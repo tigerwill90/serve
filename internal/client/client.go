@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 )
@@ -15,9 +16,9 @@ type Client struct {
 	baseURL    string
 }
 
-func New(controlPort string) *Client {
+func New(controlHost, controlPort string) *Client {
 	return &Client{
-		baseURL: fmt.Sprintf("http://127.0.0.1:%s", controlPort),
+		baseURL: fmt.Sprintf("http://%s", net.JoinHostPort(controlHost, controlPort)),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Second,
 		},

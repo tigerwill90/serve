@@ -107,7 +107,7 @@ func TestClientList(t *testing.T) {
 }
 
 func TestClientServerDown(t *testing.T) {
-	c := New("19999") // unlikely port
+	c := New("127.0.0.1", "19999") // unlikely port
 
 	_, err := c.Mount("/tmp", "/foo")
 	if err == nil {
