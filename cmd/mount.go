@@ -33,8 +33,9 @@ func newMountCommand() *cli.Command {
 				return fmt.Errorf("path not found: %w", statErr)
 			}
 
+			controlHost := cmd.Root().String("control-host")
 			controlPort := cmd.Root().String("control-port")
-			c := client.New(controlPort)
+			c := client.New(controlHost, controlPort)
 
 			info, err := c.Mount(absPath, route)
 			if err != nil {

@@ -14,8 +14,9 @@ func newListCommand() *cli.Command {
 		Name:  "list",
 		Usage: "List all active mounts",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			controlHost := cmd.Root().String("control-host")
 			controlPort := cmd.Root().String("control-port")
-			c := client.New(controlPort)
+			c := client.New(controlHost, controlPort)
 
 			mounts, err := c.List()
 			if err != nil {

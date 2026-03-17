@@ -21,8 +21,9 @@ func newUnmountCommand() *cli.Command {
 
 			route := args.First()
 
+			controlHost := cmd.Root().String("control-host")
 			controlPort := cmd.Root().String("control-port")
-			c := client.New(controlPort)
+			c := client.New(controlHost, controlPort)
 
 			if err := c.Unmount(route); err != nil {
 				return err
