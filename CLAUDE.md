@@ -41,9 +41,6 @@ internal/
   client/                        # HTTP client for the control API
     client.go                    # Client implementation
     client_test.go               # Client tests
-.claude/
-  skills/
-    use-modern-go/SKILL.md       # Skill for applying modern Go syntax guidelines
 ```
 
 ### Two-Server Design
