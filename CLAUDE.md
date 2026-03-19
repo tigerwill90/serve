@@ -67,6 +67,10 @@ POST and DELETE accept JSON bodies. POST expects `{"path": "...", "route": "..."
 
 Directories mount with a wildcard suffix for subpath matching: route `/static` becomes pattern `/static/*{filepath}`. Files mount as exact patterns without wildcards. Hostname-scoped routes (e.g. `example.com/assets`) are supported.
 
+### Router Behavior
+
+The Fox router is configured with automatic URL normalization: trailing slash redirects (`fox.WithHandleTrailingSlash(fox.RedirectSlash)`) and fixed path redirects (`fox.WithHandleFixedPath(fox.RedirectPath)`). All mounted routes register handlers for both GET and HEAD methods.
+
 ### Middleware
 
 The public server applies two middleware layers via the Fox router: `fox.Logger()` for structured request logging and a custom `cacheControlMiddleware()` that sets `Cache-Control: no-store, max-age=0` on every response.
@@ -77,6 +81,10 @@ The public server applies two middleware layers via the Fox router: `fox.Logger(
 - `github.com/urfave/cli/v3` v3.7.0 - CLI framework
 
 Fox annotations attach `mountInfo` metadata (route, local path, type, pattern) directly to routes, which the list endpoint reads back when enumerating mounts.
+
+### CLI Flag Structure
+
+Root-level flags (`--control-host`, `--control-port`) are used by `mount`, `unmount`, and `list` commands to locate the control API. The `start` command defines its own `--host`, `--port` (aliased `-p`), `--control-host`, and `--control-port` flags for binding both servers. Client commands read the root flags via `cmd.Root().String(...)`.
 
 ## Common Commands
 
@@ -132,4 +140,6 @@ Defined in `.golangci.yml` (golangci-lint v2 format). Enabled linters: errcheck,
 - **Naming**: Standard Go conventions (CamelCase exports, camelCase unexported)
 - **Package visibility**: Implementation details go in `internal/`; CLI commands in `cmd/`
 - **Resource cleanup**: Always defer `Body.Close()` after HTTP calls; use deferred cleanup for listeners and servers
-- **Server timeouts**: Public server uses 3s read / unlimited write / 60s idle. Control server uses 5s read / 5s write / 60s idle.
+- **Server timeouts**: Public server uses 3s read / unlimited write / 60s idle. Control server uses 5s read / 5s write / 60s idle. Both servers set `MaxHeaderBytes` to 8192.
+- **Client timeout**: The control API client uses a 2s HTTP timeout for all requests.
+- **HTTP methods**: Mounted routes register handlers for both GET and HEAD.
