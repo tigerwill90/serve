@@ -27,7 +27,7 @@ Start the server:
 serve start
 ```
 
-By default, the file server listens on `127.0.0.1:8080` and the control API on port `8081`. You can change this with flags:
+By default, the file server listens on `127.0.0.1:8080` and the control API on `127.0.0.1:8081`. You can change this with flags:
 
 ```
 serve start --host 0.0.0.0 --port 9090 --control-port 9091
