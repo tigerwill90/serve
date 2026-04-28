@@ -3,7 +3,7 @@ module github.com/tigerwill90/serve
 go 1.26.0
 
 require (
-	github.com/fox-toolkit/fox v0.28.2
+	github.com/fox-toolkit/fox v0.29.1
 	github.com/urfave/cli/v3 v3.8.0
 )
 
