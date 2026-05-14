@@ -54,19 +54,19 @@ func New(cfg Config) (*Server, error) {
 	s := &Server{
 		router: router,
 		publicSrv: &http.Server{
-			Addr:           publicAddr.String(),
-			Handler:        router,
-			ReadTimeout:    3 * time.Second,
-			WriteTimeout:   0,
-			IdleTimeout:    60 * time.Second,
-			MaxHeaderBytes: 8192,
+			Addr:              publicAddr.String(),
+			Handler:           router,
+			ReadHeaderTimeout: 3 * time.Second,
+			WriteTimeout:      0,
+			IdleTimeout:       75 * time.Second,
+			MaxHeaderBytes:    8192,
 		},
 		controlSrv: &http.Server{
 			Addr:           controlAddr.String(),
 			Handler:        controlRouter,
 			ReadTimeout:    5 * time.Second,
 			WriteTimeout:   5 * time.Second,
-			IdleTimeout:    60 * time.Second,
+			IdleTimeout:    75 * time.Second,
 			MaxHeaderBytes: 8192,
 		},
 	}

@@ -140,6 +140,6 @@ Defined in `.golangci.yml` (golangci-lint v2 format). Enabled linters: errcheck,
 - **Naming**: Standard Go conventions (CamelCase exports, camelCase unexported)
 - **Package visibility**: Implementation details go in `internal/`; CLI commands in `cmd/`
 - **Resource cleanup**: Always defer `Body.Close()` after HTTP calls; use deferred cleanup for listeners and servers
-- **Server timeouts**: Public server uses 3s read / unlimited write / 60s idle. Control server uses 5s read / 5s write / 60s idle. Both servers set `MaxHeaderBytes` to 8192.
+- **Server timeouts**: Public server uses 3s read header / unlimited write / 75s idle. Control server uses 5s read / 5s write / 75s idle. Both servers set `MaxHeaderBytes` to 8192.
 - **Client timeout**: The control API client uses a 2s HTTP timeout for all requests.
 - **HTTP methods**: Mounted routes register handlers for both GET and HEAD.
