@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/fox-toolkit/fox v0.30.0
-	github.com/urfave/cli/v3 v3.9.0
+	github.com/urfave/cli/v3 v3.10.1
 )
 
 require (
