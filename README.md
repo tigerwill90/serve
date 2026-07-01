@@ -7,7 +7,7 @@
 
 ## What is it
 
-Serve is a small HTTP file server written in Go. It lets you serve local files and directories over HTTP, with the ability to dynamically mount and unmount paths at runtime through a control API, no restart needed.
+Serve is a small HTTP file server written in Go. It lets you serve local files and directories over HTTP, with the ability to dynamically mount and unmount paths at runtime through a control API, without the need to restart the server.
 
 It runs two servers: a public one (default port 8080) that serves your files, and a control server (default port 8081) that accepts mount/unmount/list commands.
 
