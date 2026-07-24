@@ -13,7 +13,7 @@ It runs two servers: a public one (default port 8080) that serves your files, an
 
 ## Getting started
 
-Requires Go 1.24 or later.
+Requires Go 1.26 or later.
 
 ```
 go install github.com/tigerwill90/serve@latest

@@ -35,6 +35,7 @@ cmd/                             # CLI commands (urfave/cli/v3)
 internal/
   server/                        # HTTP server implementation
     server.go                    # Public file server setup and lifecycle
+    server_test.go               # File serving, path normalization and cache header tests
     control.go                   # Control API (mount/unmount/list endpoints)
     control_test.go              # Control API tests
     helpers_test.go              # Shared test utilities
@@ -69,16 +70,20 @@ Directories mount with a wildcard suffix for subpath matching: route `/static` b
 
 ### Router Behavior
 
-The Fox router is configured with automatic URL normalization: trailing slash redirects (`fox.WithHandleTrailingSlash(fox.RedirectSlash)`) and fixed path redirects (`fox.WithHandleFixedPath(fox.RedirectPath)`). All mounted routes register handlers for both GET and HEAD methods.
+The public router is built by `newPublicRouter()` in `internal/server/server.go` with automatic URL normalization: trailing slash redirects (`fox.WithTrailingSlash(fox.RedirectSlash)`), consecutive slash merging (`fox.WithMergeSlashes(fox.RedirectPath)`) and dot segment collapsing (`fox.WithCollapseDotSegments(fox.RedirectPath)`). A request whose `..` segments escape above the root is rejected with 400 before route lookup. All mounted routes register handlers for both GET and HEAD methods.
+
+Tests build the public router through the same function (see `helpers_test.go`) so they exercise the production configuration.
 
 ### Middleware
 
 The public server applies two middleware layers via the Fox router: `fox.Logger()` for structured request logging and a custom `cacheControlMiddleware()` that sets `Cache-Control: no-store, max-age=0` on every response.
 
+The cache middleware wraps the `fox.ResponseWriter` and applies the header when the response headers are flushed, not before the handler runs. `net/http` deletes `Cache-Control`, `Content-Encoding`, `Etag` and `Last-Modified` when `http.FileServer` or `http.ServeFile` turns a filesystem error into an error response, so a header set up front would be dropped from every mount 404.
+
 ### Key Dependencies
 
-- `github.com/fox-toolkit/fox` v0.27.1 - HTTP router with annotation support (used to store mount metadata on routes)
-- `github.com/urfave/cli/v3` v3.7.0 - CLI framework
+- `github.com/fox-toolkit/fox` v0.32.1 - HTTP router with annotation support (used to store mount metadata on routes)
+- `github.com/urfave/cli/v3` v3.10.1 - CLI framework
 
 Fox annotations attach `mountInfo` metadata (route, local path, type, pattern) directly to routes, which the list endpoint reads back when enumerating mounts.
 

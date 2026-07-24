@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -39,14 +40,7 @@ func New(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("cannot resolve control address: %w", err)
 	}
 
-	router := fox.MustRouter(
-		fox.WithHandleTrailingSlash(fox.RedirectSlash),
-		fox.WithHandleFixedPath(fox.RedirectPath),
-		fox.WithMiddleware(
-			fox.Logger(slog.NewTextHandler(os.Stdout, nil)),
-			cacheControlMiddleware(),
-		),
-	)
+	router := newPublicRouter(slog.NewTextHandler(os.Stdout, nil))
 
 	ctrl := newControl(router)
 	controlRouter := newControlRouter(ctrl)
@@ -124,10 +118,71 @@ func (s *Server) Run() error {
 	return shutdownErr
 }
 
+// newPublicRouter builds the router serving mounted files. Request paths are
+// normalized before lookup: a missing or extra trailing slash, consecutive
+// slashes and "." / ".." segments all redirect to the canonical path when it
+// matches a mounted route. A ".." escaping above the root is rejected with a
+// 400 by the router before lookup.
+func newPublicRouter(logHandler slog.Handler) *fox.Router {
+	return fox.MustRouter(
+		fox.WithTrailingSlash(fox.RedirectSlash),
+		fox.WithMergeSlashes(fox.RedirectPath),
+		fox.WithCollapseDotSegments(fox.RedirectPath),
+		fox.WithMiddleware(
+			fox.Logger(logHandler),
+			cacheControlMiddleware(),
+		),
+	)
+}
+
+const cacheControlValue = "no-store, max-age=0"
+
+// cacheControlWriter applies Cache-Control just before the response headers are
+// flushed rather than up front. Setting the header before calling the handler is
+// not enough: net/http deletes Cache-Control, Content-Encoding, Etag and
+// Last-Modified when the file server turns a filesystem error into an error
+// response, so every 404 served by a mount would go out without the header.
+type cacheControlWriter struct {
+	fox.ResponseWriter
+}
+
+// setCacheControl is a no-op once the headers are flushed, since mutating them
+// at that point has no effect on the response.
+func (w *cacheControlWriter) setCacheControl() {
+	if !w.Written() {
+		w.Header().Set("Cache-Control", cacheControlValue)
+	}
+}
+
+func (w *cacheControlWriter) WriteHeader(code int) {
+	w.setCacheControl()
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *cacheControlWriter) Write(b []byte) (int, error) {
+	w.setCacheControl()
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *cacheControlWriter) WriteString(s string) (int, error) {
+	w.setCacheControl()
+	return w.ResponseWriter.WriteString(s)
+}
+
+func (w *cacheControlWriter) ReadFrom(r io.Reader) (int64, error) {
+	w.setCacheControl()
+	return w.ResponseWriter.ReadFrom(r)
+}
+
+func (w *cacheControlWriter) FlushError() error {
+	w.setCacheControl()
+	return w.ResponseWriter.FlushError()
+}
+
 func cacheControlMiddleware() fox.MiddlewareFunc {
 	return func(next fox.HandlerFunc) fox.HandlerFunc {
 		return func(c *fox.Context) {
-			c.SetHeader("Cache-Control", "no-store, max-age=0")
+			c.SetWriter(&cacheControlWriter{ResponseWriter: c.Writer()})
 			next(c)
 		}
 	}
