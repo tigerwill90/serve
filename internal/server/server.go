@@ -40,8 +40,9 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	router := fox.MustRouter(
-		fox.WithHandleTrailingSlash(fox.RedirectSlash),
-		fox.WithHandleFixedPath(fox.RedirectPath),
+		fox.WithTrailingSlash(fox.RedirectSlash),
+		fox.WithMergeSlashes(fox.RedirectPath),
+		fox.WithCollapseDotSegments(fox.RedirectPath),
 		fox.WithMiddleware(
 			fox.Logger(slog.NewTextHandler(os.Stdout, nil)),
 			cacheControlMiddleware(),

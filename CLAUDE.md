@@ -69,7 +69,7 @@ Directories mount with a wildcard suffix for subpath matching: route `/static` b
 
 ### Router Behavior
 
-The Fox router is configured with automatic URL normalization: trailing slash redirects (`fox.WithHandleTrailingSlash(fox.RedirectSlash)`) and fixed path redirects (`fox.WithHandleFixedPath(fox.RedirectPath)`). All mounted routes register handlers for both GET and HEAD methods.
+The Fox router is configured with automatic URL normalization: trailing slash redirects (`fox.WithTrailingSlash(fox.RedirectSlash)`), repeated slash merging (`fox.WithMergeSlashes(fox.RedirectPath)`) and dot segment collapsing (`fox.WithCollapseDotSegments(fox.RedirectPath)`). Normalization runs before route lookup, so a non canonical path is redirected to its canonical form rather than served in place. All mounted routes register handlers for both GET and HEAD methods.
 
 ### Middleware
 
@@ -77,8 +77,8 @@ The public server applies two middleware layers via the Fox router: `fox.Logger(
 
 ### Key Dependencies
 
-- `github.com/fox-toolkit/fox` v0.27.1 - HTTP router with annotation support (used to store mount metadata on routes)
-- `github.com/urfave/cli/v3` v3.7.0 - CLI framework
+- `github.com/fox-toolkit/fox` v0.32.1 - HTTP router with annotation support (used to store mount metadata on routes)
+- `github.com/urfave/cli/v3` v3.10.1 - CLI framework
 
 Fox annotations attach `mountInfo` metadata (route, local path, type, pattern) directly to routes, which the list endpoint reads back when enumerating mounts.
 
