@@ -35,6 +35,7 @@ cmd/                             # CLI commands (urfave/cli/v3)
 internal/
   server/                        # HTTP server implementation
     server.go                    # Public file server setup and lifecycle
+    server_test.go               # Public router normalization and serving tests
     control.go                   # Control API (mount/unmount/list endpoints)
     control_test.go              # Control API tests
     helpers_test.go              # Shared test utilities
@@ -69,7 +70,7 @@ Directories mount with a wildcard suffix for subpath matching: route `/static` b
 
 ### Router Behavior
 
-The Fox router is configured with automatic URL normalization: trailing slash redirects (`fox.WithHandleTrailingSlash(fox.RedirectSlash)`) and fixed path redirects (`fox.WithHandleFixedPath(fox.RedirectPath)`). All mounted routes register handlers for both GET and HEAD methods.
+The public router is built by `newPublicRouter()` in `internal/server/server.go`, which configures redirect based URL normalization: trailing slash redirects (`fox.WithTrailingSlash(fox.RedirectSlash)`), repeated slash merging (`fox.WithMergeSlashes(fox.RedirectPath)`) and dot segment collapsing (`fox.WithCollapseDotSegments(fox.RedirectPath)`). A non canonical path is answered with a 301 to the canonical one instead of being served in place, so each mounted file is reachable under a single URL. A `..` escaping above the root is rejected with 400. All mounted routes register handlers for both GET and HEAD methods.
 
 ### Middleware
 
@@ -77,8 +78,8 @@ The public server applies two middleware layers via the Fox router: `fox.Logger(
 
 ### Key Dependencies
 
-- `github.com/fox-toolkit/fox` v0.27.1 - HTTP router with annotation support (used to store mount metadata on routes)
-- `github.com/urfave/cli/v3` v3.7.0 - CLI framework
+- `github.com/fox-toolkit/fox` v0.32.1 - HTTP router with annotation support (used to store mount metadata on routes)
+- `github.com/urfave/cli/v3` v3.10.1 - CLI framework
 
 Fox annotations attach `mountInfo` metadata (route, local path, type, pattern) directly to routes, which the list endpoint reads back when enumerating mounts.
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -39,14 +40,7 @@ func New(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("cannot resolve control address: %w", err)
 	}
 
-	router := fox.MustRouter(
-		fox.WithHandleTrailingSlash(fox.RedirectSlash),
-		fox.WithHandleFixedPath(fox.RedirectPath),
-		fox.WithMiddleware(
-			fox.Logger(slog.NewTextHandler(os.Stdout, nil)),
-			cacheControlMiddleware(),
-		),
-	)
+	router := newPublicRouter(os.Stdout)
 
 	ctrl := newControl(router)
 	controlRouter := newControlRouter(ctrl)
@@ -122,6 +116,22 @@ func (s *Server) Run() error {
 
 	fmt.Println("File server stopped")
 	return shutdownErr
+}
+
+// newPublicRouter builds the router serving mounted files, writing request logs to logOut.
+// URL normalization is redirect based: a missing or extra trailing slash, repeated slashes
+// and dot segments are answered with a redirect to the canonical path instead of being
+// served in place, so every file is reachable under exactly one URL.
+func newPublicRouter(logOut io.Writer) *fox.Router {
+	return fox.MustRouter(
+		fox.WithTrailingSlash(fox.RedirectSlash),
+		fox.WithMergeSlashes(fox.RedirectPath),
+		fox.WithCollapseDotSegments(fox.RedirectPath),
+		fox.WithMiddleware(
+			fox.Logger(slog.NewTextHandler(logOut, nil)),
+			cacheControlMiddleware(),
+		),
+	)
 }
 
 func cacheControlMiddleware() fox.MiddlewareFunc {
