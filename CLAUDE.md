@@ -35,7 +35,6 @@ cmd/                             # CLI commands (urfave/cli/v3)
 internal/
   server/                        # HTTP server implementation
     server.go                    # Public file server setup and lifecycle
-    server_test.go               # Public router normalization and serving tests
     control.go                   # Control API (mount/unmount/list endpoints)
     control_test.go              # Control API tests
     helpers_test.go              # Shared test utilities
@@ -70,7 +69,7 @@ Directories mount with a wildcard suffix for subpath matching: route `/static` b
 
 ### Router Behavior
 
-The public router is built by `newPublicRouter()` in `internal/server/server.go`, which configures redirect based URL normalization: trailing slash redirects (`fox.WithTrailingSlash(fox.RedirectSlash)`), repeated slash merging (`fox.WithMergeSlashes(fox.RedirectPath)`) and dot segment collapsing (`fox.WithCollapseDotSegments(fox.RedirectPath)`). A non canonical path is answered with a 301 to the canonical one instead of being served in place, so each mounted file is reachable under a single URL. A `..` escaping above the root is rejected with 400. All mounted routes register handlers for both GET and HEAD methods.
+The Fox router is configured with automatic URL normalization: trailing slash redirects (`fox.WithTrailingSlash(fox.RedirectSlash)`), repeated slash merging (`fox.WithMergeSlashes(fox.RedirectPath)`) and dot segment collapsing (`fox.WithCollapseDotSegments(fox.RedirectPath)`). Normalization runs before route lookup, so a non canonical path is redirected to its canonical form rather than served in place. All mounted routes register handlers for both GET and HEAD methods.
 
 ### Middleware
 
