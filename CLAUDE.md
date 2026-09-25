@@ -78,7 +78,7 @@ The public server applies two middleware layers via the Fox router: `fox.Logger(
 ### Key Dependencies
 
 - `github.com/fox-toolkit/fox` v0.32.1 - HTTP router with annotation support (used to store mount metadata on routes)
-- `github.com/urfave/cli/v3` v3.10.1 - CLI framework
+- `github.com/urfave/cli/v3` v3.13.0 - CLI framework
 
 Fox annotations attach `mountInfo` metadata (route, local path, type, pattern) directly to routes, which the list endpoint reads back when enumerating mounts.
 
@@ -115,7 +115,7 @@ golangci-lint run --fix
 
 GitHub Actions runs on pull requests to master/main. Two jobs:
 
-1. **Lint**: golangci-lint v2.11 with the config in `.golangci.yml`
+1. **Lint**: golangci-lint v2.14 with the config in `.golangci.yml`
 2. **Test**: `go test -race -count=1 ./...` across Go 1.26 and stable
 
 ### Linter Configuration
