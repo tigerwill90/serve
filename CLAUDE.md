@@ -16,10 +16,6 @@ readability, safety, or error handling, fix it now. Deferring improvements almos
 refactors, bug fixes, and code review feedback equally. The only acceptable reason to defer an improvement is if it requires a scope that would
 block the current change from shipping safely.
 
-## Writing Style
-
-When writing prose (PR descriptions, README sections, comments), avoid AI-typical formatting: no em dashes (—), no excessive bullet points, no superlatives. Write in a natural, concise, honest tone. Never fabricate performance claims or technical justifications.
-
 ## Architecture
 
 The project follows a clean separation between CLI, server, and client layers:
